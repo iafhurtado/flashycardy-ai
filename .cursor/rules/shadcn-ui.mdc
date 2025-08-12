@@ -1,0 +1,81 @@
+---
+alwaysApply: true
+---
+# shadcn/ui Guidelines
+
+This project uses shadcn/ui for all UI elements. shadcn/ui is a collection of reusable components built on top of Tailwind CSS and Radix UI.
+
+## Initialization
+
+If shadcn/ui is not initialized in our project, use the following command:
+
+```bash
+npx shadcn@latest init
+```
+
+This will:
+- Set up the necessary configuration files
+- Configure Tailwind CSS
+- Set up the component directory structure
+- Add required dependencies
+
+## Installing Components
+
+To install a specific component, use the following command format:
+
+```bash
+npx shadcn@latest add <component-name>
+```
+
+### Examples:
+- Install button component: `npx shadcn@latest add button`
+- Install card component: `npx shadcn@latest add card`
+- Install input component: `npx shadcn@latest add input`
+- Install dialog component: `npx shadcn@latest add dialog`
+
+## Usage Guidelines
+
+1. **Always use shadcn/ui components** for UI elements instead of creating custom components
+2. **Check if a component exists** before creating custom implementations
+3. **Install components as needed** using the add command
+4. **Follow shadcn/ui patterns** for styling and theming
+5. **Use the components directory** at `src/components/ui/` for all shadcn/ui components
+
+## Available Components
+
+Common shadcn/ui components include:
+- Button
+- Card
+- Input
+- Dialog
+- Dropdown Menu
+- Form
+- Label
+- Select
+- Textarea
+- Toast
+- Tabs
+- Accordion
+- Alert
+- Badge
+- Calendar
+- Checkbox
+- Radio Group
+- Switch
+- Table
+- Avatar
+- Progress
+- Slider
+- Tooltip
+
+## Configuration Files
+
+The main configuration files for shadcn/ui are:
+- `components.json` - Component configuration
+- `tailwind.config.js` - Tailwind CSS configuration
+- `src/components/ui/` - Component directory
+- `src/lib/utils.ts` - Utility functions (cn function)
+
+## Theming
+
+shadcn/ui supports theming through CSS variables. The theme can be customized in the global CSS file and component styles.

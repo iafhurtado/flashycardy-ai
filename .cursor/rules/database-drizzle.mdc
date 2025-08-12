@@ -1,0 +1,133 @@
+---
+title: Database Interactions with Drizzle
+---
+
+# Database Interactions with Drizzle
+
+This project uses Drizzle ORM for all database operations. All database interactions must use the defined schema and follow Drizzle patterns.
+
+## Schema Location
+
+The database schema is defined in [src/db/schema.ts](mdc:src/db/schema.ts) and includes:
+
+- **decksTable**: Flashcard decks with name, description, userId, and visibility settings
+- **cardsTable**: Individual flashcards with front/back content, linked to decks
+- **userProgressTable**: User study progress tracking with spaced repetition data
+
+## Database Connection
+
+The database connection is configured in [src/db/index.ts](mdc:src/db/index.ts) using:
+- Neon database with HTTP driver
+- Drizzle ORM wrapper
+- Environment variable `DATABASE_URL` for connection string
+
+## Required Patterns
+
+### 1. Always Import Schema
+```typescript
+import { decksTable, cardsTable, userProgressTable } from "@/db/schema";
+import { db } from "@/db";
+```
+
+### 2. Use Drizzle Query Builder
+```typescript
+// ✅ Correct - Using Drizzle queries
+const decks = await db.select().from(decksTable).where(eq(decksTable.userId, userId));
+
+// ❌ Incorrect - Raw SQL
+const decks = await db.execute(sql`SELECT * FROM decks WHERE user_id = ${userId}`);
+```
+
+### 3. Import Required Drizzle Functions
+```typescript
+import { eq, and, or, desc, asc, count, sum } from "drizzle-orm";
+```
+
+### 4. Follow Schema Relations
+```typescript
+// Use defined relations for joins
+const deckWithCards = await db.query.decksTable.findFirst({
+  where: eq(decksTable.id, deckId),
+  with: {
+    cards: true
+  }
+});
+```
+
+### 5. Type Safety
+Always use the schema types for type safety:
+```typescript
+import type { Deck, Card, UserProgress } from "@/db/schema";
+```
+
+## Common Query Patterns
+
+### Insert Operations
+```typescript
+const newDeck = await db.insert(decksTable).values({
+  name: "My Deck",
+  description: "Description",
+  userId: "user_123",
+  isPublic: false
+}).returning();
+```
+
+### Select Operations
+```typescript
+// Simple select
+const deck = await db.select().from(decksTable).where(eq(decksTable.id, deckId));
+
+// Select with relations
+const deckWithCards = await db.query.decksTable.findFirst({
+  where: eq(decksTable.id, deckId),
+  with: {
+    cards: {
+      with: {
+        userProgress: true
+      }
+    }
+  }
+});
+```
+
+### Update Operations
+```typescript
+await db.update(decksTable)
+  .set({ name: "Updated Name", updatedAt: new Date() })
+  .where(eq(decksTable.id, deckId));
+```
+
+### Delete Operations
+```typescript
+await db.delete(cardsTable).where(eq(cardsTable.id, cardId));
+```
+
+## Error Handling
+
+Always wrap database operations in try-catch blocks:
+```typescript
+try {
+  const result = await db.select().from(decksTable);
+  return result;
+} catch (error) {
+  console.error("Database error:", error);
+  throw new Error("Failed to fetch decks");
+}
+```
+
+## Performance Considerations
+
+1. **Use specific selects** instead of `SELECT *`
+2. **Limit results** when querying large datasets
+3. **Use indexes** on frequently queried columns
+4. **Batch operations** for multiple inserts/updates
+
+## Migration and Schema Changes
+
+- Schema changes must be made in [src/db/schema.ts](mdc:src/db/schema.ts)
+- Use Drizzle migrations for production schema updates
+- Test schema changes thoroughly before deployment
+
+## Testing Database Operations
+
+Use the test file at [src/db/test.ts](mdc:src/db/test.ts) for testing database operations and queries.

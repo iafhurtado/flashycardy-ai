@@ -1,0 +1,229 @@
+---
+alwaysApply: true
+description: Data handling requirements for server components, server actions, zod validation, and TypeScript types
+---
+
+# Data Handling Requirements
+
+## Server Components for Data Retrieval
+
+**ALWAYS** use server components for data retrieval operations. Never fetch data directly in client components.
+
+### Correct Pattern:
+```tsx
+// ✅ Good - Server Component
+async function DataComponent() {
+  const data = await db.query.users.findMany();
+  return <div>{/* render data */}</div>;
+}
+```
+
+### Incorrect Pattern:
+```tsx
+// ❌ Bad - Client Component fetching data
+'use client';
+function DataComponent() {
+  const [data, setData] = useState();
+  useEffect(() => {
+    fetch('/api/data').then(setData);
+  }, []);
+  return <div>{/* render data */}</div>;
+}
+```
+
+## Server Actions for Database Operations
+
+**ALWAYS** use server actions for any database mutations (insert, update, delete). Never use API routes for database operations.
+
+### Correct Pattern:
+```tsx
+// ✅ Good - Server Action
+'use server';
+import { z } from 'zod';
+
+const CreateUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+export async function createUser(data: z.infer<typeof CreateUserSchema>) {
+  const validatedData = CreateUserSchema.parse(data);
+  return await db.insert(users).values(validatedData);
+}
+```
+
+### Usage in Client Component:
+```tsx
+'use client';
+import { createUser } from './actions';
+
+export function UserForm() {
+  const handleSubmit = async (formData: FormData) => {
+    const data = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+    };
+    await createUser(data);
+  };
+  
+  return <form action={handleSubmit}>{/* form fields */}</form>;
+}
+```
+
+## Zod Validation Requirements
+
+**ALWAYS** use Zod for data validation. Every server action must validate its input data with Zod.
+
+### Required Pattern:
+```tsx
+'use server';
+import { z } from 'zod';
+
+// ✅ Good - Define schema and type
+const UserSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+  age: z.number().int().positive().optional(),
+});
+
+// ✅ Good - Extract TypeScript type from schema
+type UserInput = z.infer<typeof UserSchema>;
+
+export async function updateUser(data: UserInput) {
+  // ✅ Good - Validate input data
+  const validatedData = UserSchema.parse(data);
+  
+  // Proceed with database operation
+  return await db.update(users)
+    .set(validatedData)
+    .where(eq(users.id, validatedData.id));
+}
+```
+
+## TypeScript Type Requirements
+
+**NEVER** use `FormData` as the type for server action parameters. Always define proper TypeScript types using Zod schemas.
+
+### Incorrect Pattern:
+```tsx
+// ❌ Bad - Using FormData type
+'use server';
+export async function createUser(formData: FormData) {
+  // Don't do this
+}
+```
+
+### Correct Pattern:
+```tsx
+// ✅ Good - Using proper TypeScript types
+'use server';
+import { z } from 'zod';
+
+const CreateUserSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+});
+
+type CreateUserInput = z.infer<typeof CreateUserSchema>;
+
+export async function createUser(data: CreateUserInput) {
+  const validatedData = CreateUserSchema.parse(data);
+  // Proceed with database operation
+}
+```
+
+## Complete Example
+
+Here's a complete example showing all requirements:
+
+```tsx
+// lib/schemas/user.ts
+import { z } from 'zod';
+
+export const UserSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
+  email: z.string().email('Invalid email format'),
+  age: z.number().int().positive().optional(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+export type CreateUserInput = Omit<User, 'id'>;
+export type UpdateUserInput = User;
+
+// app/actions/user.ts
+'use server';
+import { UserSchema, CreateUserInput, UpdateUserInput } from '@/lib/schemas/user';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+
+export async function createUser(data: CreateUserInput) {
+  const validatedData = UserSchema.parse(data);
+  return await db.insert(users).values(validatedData);
+}
+
+export async function updateUser(data: UpdateUserInput) {
+  const validatedData = UserSchema.parse(data);
+  return await db.update(users)
+    .set(validatedData)
+    .where(eq(users.id, validatedData.id!));
+}
+
+export async function deleteUser(id: string) {
+  const validatedId = z.string().uuid().parse(id);
+  return await db.delete(users).where(eq(users.id, validatedId));
+}
+
+// app/components/user-list.tsx
+// ✅ Server Component for data retrieval
+async function UserList() {
+  const allUsers = await db.query.users.findMany();
+  
+  return (
+    <div>
+      {allUsers.map(user => (
+        <UserCard key={user.id} user={user} />
+      ))}
+    </div>
+  );
+}
+
+// app/components/user-card.tsx
+'use client';
+import { updateUser, deleteUser } from '@/app/actions/user';
+import type { User } from '@/lib/schemas/user';
+
+export function UserCard({ user }: { user: User }) {
+  const handleUpdate = async (formData: FormData) => {
+    const data = {
+      id: user.id,
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+    };
+    await updateUser(data);
+  };
+  
+  const handleDelete = async () => {
+    await deleteUser(user.id);
+  };
+  
+  return (
+    <div>
+      <form action={handleUpdate}>
+        {/* form fields */}
+      </form>
+      <button onClick={handleDelete}>Delete</button>
+    </div>
+  );
+}
+```
+
+## Key Points Summary
+
+1. **Data Retrieval**: Always use server components
+2. **Database Mutations**: Always use server actions
+3. **Validation**: Always use Zod schemas
+4. **TypeScript**: Always define proper types from Zod schemas
+5. **Never use FormData as type**: Extract data and pass structured objects
+6. **Validation**: Always validate input data in server actions before database operations

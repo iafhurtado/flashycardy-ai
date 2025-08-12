@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "db:test": "tsx src/db/test.ts"
+    "db:test": "tsx src/db/test.ts",
+    "db:add-examples": "tsx src/db/add-example-data.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.30.1",

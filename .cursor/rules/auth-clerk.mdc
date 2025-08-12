@@ -55,7 +55,7 @@ import { redirect } from "next/navigation";
 // In server components
 const { userId } = await auth();
 if (!userId) {
-  redirect("/sign-in");
+  redirect("/dashboard");
 }
 ```
 

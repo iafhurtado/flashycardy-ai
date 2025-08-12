@@ -1,9 +1,52 @@
----
-alwaysApply: true
----
-# shadcn/ui Guidelines
+# shadcn/ui Guidelines - ABSOLUTE REQUIREMENTS
 
-This project uses shadcn/ui for all UI elements. shadcn/ui is a collection of reusable components built on top of Tailwind CSS and Radix UI.
+This project uses **ONLY** shadcn/ui components for all UI elements. **ABSOLUTELY NO CUSTOM UI COMPONENTS** are allowed. shadcn/ui is a collection of reusable components built on top of Tailwind CSS and Radix UI.
+
+## CRITICAL RULES - NO EXCEPTIONS
+
+1. **NEVER create custom UI components** - All UI must use shadcn/ui components
+2. **NEVER use raw HTML elements** for interactive components (buttons, inputs, etc.)
+3. **NEVER use custom CSS classes** for component styling - only use shadcn/ui components
+4. **ALWAYS install shadcn/ui components** before using them
+5. **ALWAYS use shadcn/ui Button component** for all buttons, including Clerk sign-in/sign-up buttons
+6. **ALWAYS use Clerk modal mode** for authentication - never redirect to separate pages
+
+## Clerk Integration Requirements
+
+**MANDATORY**: All Clerk authentication must use:
+- shadcn/ui Button components (never custom buttons)
+- Clerk's modal mode (`mode="modal"`)
+- No redirect-based authentication
+
+### Correct Clerk Implementation:
+```tsx
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+
+// ✅ CORRECT - Using shadcn/ui Button with Clerk modal
+<SignInButton mode="modal">
+  <Button variant="default">Sign In</Button>
+</SignInButton>
+
+<SignUpButton mode="modal">
+  <Button variant="outline">Sign Up</Button>
+</SignUpButton>
+```
+
+### Incorrect Patterns (NEVER DO THIS):
+```tsx
+// ❌ WRONG - Custom button styling
+<SignInButton mode="modal">
+  <button className="px-8 py-3 bg-blue-600 hover:bg-blue-700...">
+    Sign In
+  </button>
+</SignInButton>
+
+// ❌ WRONG - Redirect mode instead of modal
+<SignInButton>
+  <Button>Sign In</Button>
+</SignInButton>
+```
 
 ## Initialization
 
@@ -35,16 +78,19 @@ npx shadcn@latest add <component-name>
 
 ## Usage Guidelines
 
-1. **Always use shadcn/ui components** for UI elements instead of creating custom components
-2. **Check if a component exists** before creating custom implementations
-3. **Install components as needed** using the add command
-4. **Follow shadcn/ui patterns** for styling and theming
-5. **Use the components directory** at `src/components/ui/` for all shadcn/ui components
+1. **ALWAYS use shadcn/ui components** for UI elements instead of creating custom components
+2. **NEVER create custom UI components** - this is strictly forbidden
+3. **Check if a component exists** before creating custom implementations
+4. **Install components as needed** using the add command
+5. **Follow shadcn/ui patterns** for styling and theming
+6. **Use the components directory** at `src/components/ui/` for all shadcn/ui components
+7. **NEVER use raw HTML elements** for interactive components
+8. **NEVER use custom CSS classes** for component styling
 
 ## Available Components
 
 Common shadcn/ui components include:
-- Button
+- Button (REQUIRED for all buttons)
 - Card
 - Input
 - Dialog
@@ -77,5 +123,17 @@ The main configuration files for shadcn/ui are:
 - `src/lib/utils.ts` - Utility functions (cn function)
 
 ## Theming
+
+shadcn/ui supports theming through CSS variables. The theme can be customized in the global CSS file and component styles.
+
+## Enforcement
+
+- **ALL UI components must be shadcn/ui components**
+- **NO custom button implementations**
+- **NO custom input implementations**
+- **NO custom card implementations**
+- **Clerk must use modal mode with shadcn/ui Button components**
+- **Any violation of these rules will result in immediate correction**
+
 
 shadcn/ui supports theming through CSS variables. The theme can be customized in the global CSS file and component styles.

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { db } from './index';
 import { decksTable, cardsTable } from './schema';
 import { eq } from 'drizzle-orm';
+import { createDeck, createCard, getAllDecksWithCardCounts, getCardsByDeckId } from './queries';
 
 const USER_ID = 'user_31BQtxJgW0a56KD4zawATWXpoXp';
 
@@ -10,14 +11,14 @@ async function addExampleData() {
     console.log('Adding example decks and cards...');
 
     // Create Spanish Learning Deck
-    const spanishDeck = await db.insert(decksTable).values({
+    const spanishDeck = await createDeck({
       name: 'Spanish Vocabulary',
       description: 'Learn common English words and their Spanish translations',
       userId: USER_ID,
       isPublic: false,
-    }).returning();
+    });
 
-    console.log('✅ Spanish deck created with ID:', spanishDeck[0].id);
+    console.log('✅ Spanish deck created');
 
     // Spanish vocabulary cards
     const spanishCards = [
@@ -41,7 +42,7 @@ async function addExampleData() {
     ];
 
     for (const card of spanishCards) {
-      await db.insert(cardsTable).values({
+      await createCard({
         deckId: spanishDeck[0].id,
         front: card.front,
         back: card.back,
@@ -51,14 +52,14 @@ async function addExampleData() {
     console.log('✅ Spanish cards added');
 
     // Create British History Deck
-    const historyDeck = await db.insert(decksTable).values({
+    const historyDeck = await createDeck({
       name: 'British History',
       description: 'Test your knowledge of key events and figures in British history',
       userId: USER_ID,
       isPublic: false,
-    }).returning();
+    });
 
-    console.log('✅ British History deck created with ID:', historyDeck[0].id);
+    console.log('✅ British History deck created');
 
     // British history cards
     const historyCards = [
@@ -82,7 +83,7 @@ async function addExampleData() {
     ];
 
     for (const card of historyCards) {
-      await db.insert(cardsTable).values({
+      await createCard({
         deckId: historyDeck[0].id,
         front: card.front,
         back: card.back,
@@ -91,12 +92,12 @@ async function addExampleData() {
 
     console.log('✅ British History cards added');
 
-    // Verify the data was added
-    const allDecks = await db.select().from(decksTable).where(eq(decksTable.userId, USER_ID));
+    // Verify the data was added using helper functions
+    const allDecks = await getAllDecksWithCardCounts(USER_ID);
     console.log('✅ Total decks for user:', allDecks.length);
 
     for (const deck of allDecks) {
-      const cards = await db.select().from(cardsTable).where(eq(cardsTable.deckId, deck.id));
+      const cards = await getCardsByDeckId(deck.id);
       console.log(`✅ Deck "${deck.name}" has ${cards.length} cards`);
     }
 

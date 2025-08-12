@@ -1,9 +1,61 @@
----
-alwaysApply: true
-description: Data handling requirements for server components, server actions, zod validation, and TypeScript types
----
 
 # Data Handling Requirements
+
+## Database Query Helper Functions
+
+**ALWAYS** use helper functions from the `db/queries` directory for all database operations. Never write raw database queries directly in server components or server actions.
+
+### Directory Structure:
+```
+db/
+  ├── queries/
+  │   ├── users.ts
+  │   ├── decks.ts
+  │   ├── cards.ts
+  │   └── index.ts
+  ├── schema.ts
+  └── index.ts
+```
+
+### Correct Pattern for Query Functions:
+```tsx
+// db/queries/users.ts
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+
+export async function getAllUsers() {
+  return await db.query.users.findMany();
+}
+
+export async function getUserById(id: string) {
+  return await db.query.users.findFirst({
+    where: eq(users.id, id)
+  });
+}
+
+export async function createUser(data: CreateUserInput) {
+  return await db.insert(users).values(data);
+}
+
+export async function updateUser(id: string, data: UpdateUserInput) {
+  return await db.update(users)
+    .set(data)
+    .where(eq(users.id, id));
+}
+
+export async function deleteUser(id: string) {
+  return await db.delete(users).where(eq(users.id, id));
+}
+```
+
+### Correct Pattern for Index File:
+```tsx
+// db/queries/index.ts
+export * from './users';
+export * from './decks';
+export * from './cards';
+```
 
 ## Server Components for Data Retrieval
 
@@ -11,9 +63,11 @@ description: Data handling requirements for server components, server actions, z
 
 ### Correct Pattern:
 ```tsx
-// ✅ Good - Server Component
+// ✅ Good - Server Component using query helpers
+import { getAllUsers } from '@/db/queries';
+
 async function DataComponent() {
-  const data = await db.query.users.findMany();
+  const data = await getAllUsers();
   return <div>{/* render data */}</div>;
 }
 ```
@@ -29,6 +83,12 @@ function DataComponent() {
   }, []);
   return <div>{/* render data */}</div>;
 }
+
+// ❌ Bad - Direct database queries in components
+async function DataComponent() {
+  const data = await db.query.users.findMany(); // Don't do this
+  return <div>{/* render data */}</div>;
+}
 ```
 
 ## Server Actions for Database Operations
@@ -37,25 +97,26 @@ function DataComponent() {
 
 ### Correct Pattern:
 ```tsx
-// ✅ Good - Server Action
+// ✅ Good - Server Action using query helpers
 'use server';
 import { z } from 'zod';
+import { createUser } from '@/db/queries';
 
 const CreateUserSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
 });
 
-export async function createUser(data: z.infer<typeof CreateUserSchema>) {
+export async function handleCreateUser(data: z.infer<typeof CreateUserSchema>) {
   const validatedData = CreateUserSchema.parse(data);
-  return await db.insert(users).values(validatedData);
+  return await createUser(validatedData);
 }
 ```
 
 ### Usage in Client Component:
 ```tsx
 'use client';
-import { createUser } from './actions';
+import { handleCreateUser } from './actions';
 
 export function UserForm() {
   const handleSubmit = async (formData: FormData) => {
@@ -63,7 +124,7 @@ export function UserForm() {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
     };
-    await createUser(data);
+    await handleCreateUser(data);
   };
   
   return <form action={handleSubmit}>{/* form fields */}</form>;
@@ -78,6 +139,7 @@ export function UserForm() {
 ```tsx
 'use server';
 import { z } from 'zod';
+import { updateUser } from '@/db/queries';
 
 // ✅ Good - Define schema and type
 const UserSchema = z.object({
@@ -90,14 +152,12 @@ const UserSchema = z.object({
 // ✅ Good - Extract TypeScript type from schema
 type UserInput = z.infer<typeof UserSchema>;
 
-export async function updateUser(data: UserInput) {
+export async function handleUpdateUser(data: UserInput) {
   // ✅ Good - Validate input data
   const validatedData = UserSchema.parse(data);
   
-  // Proceed with database operation
-  return await db.update(users)
-    .set(validatedData)
-    .where(eq(users.id, validatedData.id));
+  // Use query helper function
+  return await updateUser(validatedData.id, validatedData);
 }
 ```
 
@@ -119,6 +179,7 @@ export async function createUser(formData: FormData) {
 // ✅ Good - Using proper TypeScript types
 'use server';
 import { z } from 'zod';
+import { createUser } from '@/db/queries';
 
 const CreateUserSchema = z.object({
   name: z.string().min(1),
@@ -127,9 +188,9 @@ const CreateUserSchema = z.object({
 
 type CreateUserInput = z.infer<typeof CreateUserSchema>;
 
-export async function createUser(data: CreateUserInput) {
+export async function handleCreateUser(data: CreateUserInput) {
   const validatedData = CreateUserSchema.parse(data);
-  // Proceed with database operation
+  return await createUser(validatedData);
 }
 ```
 
@@ -152,33 +213,63 @@ export type User = z.infer<typeof UserSchema>;
 export type CreateUserInput = Omit<User, 'id'>;
 export type UpdateUserInput = User;
 
-// app/actions/user.ts
-'use server';
-import { UserSchema, CreateUserInput, UpdateUserInput } from '@/lib/schemas/user';
+// db/queries/users.ts
 import { db } from '@/db';
 import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import type { CreateUserInput, UpdateUserInput } from '@/lib/schemas/user';
 
-export async function createUser(data: CreateUserInput) {
-  const validatedData = UserSchema.parse(data);
-  return await db.insert(users).values(validatedData);
+export async function getAllUsers() {
+  return await db.query.users.findMany();
 }
 
-export async function updateUser(data: UpdateUserInput) {
-  const validatedData = UserSchema.parse(data);
+export async function getUserById(id: string) {
+  return await db.query.users.findFirst({
+    where: eq(users.id, id)
+  });
+}
+
+export async function createUser(data: CreateUserInput) {
+  return await db.insert(users).values(data);
+}
+
+export async function updateUser(id: string, data: UpdateUserInput) {
   return await db.update(users)
-    .set(validatedData)
-    .where(eq(users.id, validatedData.id!));
+    .set(data)
+    .where(eq(users.id, id));
 }
 
 export async function deleteUser(id: string) {
+  return await db.delete(users).where(eq(users.id, id));
+}
+
+// app/actions/user.ts
+'use server';
+import { z } from 'zod';
+import { UserSchema, CreateUserInput, UpdateUserInput } from '@/lib/schemas/user';
+import { createUser, updateUser, deleteUser } from '@/db/queries';
+
+export async function handleCreateUser(data: CreateUserInput) {
+  const validatedData = UserSchema.parse(data);
+  return await createUser(validatedData);
+}
+
+export async function handleUpdateUser(data: UpdateUserInput) {
+  const validatedData = UserSchema.parse(data);
+  return await updateUser(validatedData.id!, validatedData);
+}
+
+export async function handleDeleteUser(id: string) {
   const validatedId = z.string().uuid().parse(id);
-  return await db.delete(users).where(eq(users.id, validatedId));
+  return await deleteUser(validatedId);
 }
 
 // app/components/user-list.tsx
-// ✅ Server Component for data retrieval
+// ✅ Server Component for data retrieval using query helpers
+import { getAllUsers } from '@/db/queries';
+
 async function UserList() {
-  const allUsers = await db.query.users.findMany();
+  const allUsers = await getAllUsers();
   
   return (
     <div>
@@ -191,7 +282,7 @@ async function UserList() {
 
 // app/components/user-card.tsx
 'use client';
-import { updateUser, deleteUser } from '@/app/actions/user';
+import { handleUpdateUser, handleDeleteUser } from '@/app/actions/user';
 import type { User } from '@/lib/schemas/user';
 
 export function UserCard({ user }: { user: User }) {
@@ -201,11 +292,11 @@ export function UserCard({ user }: { user: User }) {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
     };
-    await updateUser(data);
+    await handleUpdateUser(data);
   };
   
   const handleDelete = async () => {
-    await deleteUser(user.id);
+    await handleDeleteUser(user.id);
   };
   
   return (
@@ -221,9 +312,11 @@ export function UserCard({ user }: { user: User }) {
 
 ## Key Points Summary
 
-1. **Data Retrieval**: Always use server components
-2. **Database Mutations**: Always use server actions
-3. **Validation**: Always use Zod schemas
-4. **TypeScript**: Always define proper types from Zod schemas
-5. **Never use FormData as type**: Extract data and pass structured objects
-6. **Validation**: Always validate input data in server actions before database operations
+1. **Query Helpers**: Always use helper functions from `db/queries` directory
+2. **Data Retrieval**: Always use server components with query helpers
+3. **Database Mutations**: Always use server actions with query helpers
+4. **Validation**: Always use Zod schemas
+5. **TypeScript**: Always define proper types from Zod schemas
+6. **Never use FormData as type**: Extract data and pass structured objects
+7. **Validation**: Always validate input data in server actions before database operations
+8. **Separation of Concerns**: Keep database logic in query helpers, validation in schemas, and business logic in server actions

@@ -119,3 +119,54 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* 3D Flip Animation Styles */
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Completion Celebration Animations */
+@keyframes dash {
+  from {
+    stroke-dashoffset: 88;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes celebration-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall 3s linear infinite;
+}
+
+.animate-celebration-pulse {
+  animation: celebration-pulse 2s ease-in-out infinite;
+}

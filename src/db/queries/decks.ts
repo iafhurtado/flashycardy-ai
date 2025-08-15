@@ -40,6 +40,7 @@ export async function getRecentDecksWithCardCounts(userId: string, limit: number
 }
 
 export async function getDeckById(deckId: number, userId: string) {
+  // First get the deck with card count
   const [deck] = await db
     .select({
       id: decksTable.id,
@@ -49,21 +50,37 @@ export async function getDeckById(deckId: number, userId: string) {
       createdAt: decksTable.createdAt,
       updatedAt: decksTable.updatedAt,
       cardCount: count(cardsTable.id),
-      studiedCards: count(userProgressTable.id),
     })
     .from(decksTable)
     .leftJoin(cardsTable, eq(decksTable.id, cardsTable.deckId))
-    .leftJoin(userProgressTable, and(
-      eq(cardsTable.id, userProgressTable.cardId),
-      eq(userProgressTable.userId, userId)
-    ))
     .where(and(
       eq(decksTable.id, deckId),
       eq(decksTable.userId, userId)
     ))
     .groupBy(decksTable.id);
   
-  return deck;
+  if (!deck) {
+    return null;
+  }
+
+  // Then get the count of studied cards for this deck
+  const studiedCardsResult = await db
+    .select({
+      studiedCards: count(userProgressTable.id),
+    })
+    .from(cardsTable)
+    .leftJoin(userProgressTable, and(
+      eq(cardsTable.id, userProgressTable.cardId),
+      eq(userProgressTable.userId, userId)
+    ))
+    .where(eq(cardsTable.deckId, deckId));
+
+  const studiedCards = studiedCardsResult[0]?.studiedCards || 0;
+
+  return {
+    ...deck,
+    studiedCards,
+  };
 }
 
 export async function createDeck(data: {

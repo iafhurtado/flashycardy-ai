@@ -11,7 +11,20 @@ export async function handleCreateDeck(data: CreateDeckInput) {
 
 export async function handleUpdateDeck(deckId: number, data: UpdateDeckInput) {
   const validatedData = UpdateDeckSchema.parse(data);
-  return await updateDeck(deckId, validatedData);
+  const result = await updateDeck(deckId, validatedData);
+  
+  // Return a plain object to avoid serialization issues
+  return {
+    success: true,
+    deck: result ? {
+      id: result.id,
+      name: result.name,
+      description: result.description,
+      isPublic: result.isPublic,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+    } : null
+  };
 }
 
 export async function handleDeleteDeck(deckId: number) {

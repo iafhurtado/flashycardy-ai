@@ -29,6 +29,16 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Features
+
+### Deck Management
+- **Edit Deck**: Users can edit deck titles and descriptions through an intuitive dialog interface
+- The edit functionality is accessible via two locations:
+  - An "Edit" button next to the deck title in the header
+  - An "Edit Deck" button in the study options section
+- Form validation ensures data integrity
+- Real-time error handling with user-friendly error messages
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

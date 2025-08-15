@@ -6,6 +6,7 @@ import { getDeckById, getCardsByDeckId } from "@/db/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EditDeckDialog } from "@/components/edit-deck-dialog";
 
 interface DeckPageProps {
   params: {
@@ -71,13 +72,28 @@ export default async function DeckPage({ params }: DeckPageProps) {
               </Badge>
             </div>
             
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {deckWithStats.name}
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mt-2">
-                {deckWithStats.description || 'No description provided'}
-              </p>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  {deckWithStats.name}
+                </h1>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mt-2">
+                  {deckWithStats.description || 'No description provided'}
+                </p>
+              </div>
+              <EditDeckDialog
+                deckId={deckId}
+                currentName={deckWithStats.name}
+                currentDescription={deckWithStats.description || undefined}
+                trigger={
+                  <Button variant="outline" size="sm" className="ml-4">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </Button>
+                }
+              />
             </div>
           </div>
 
@@ -152,14 +168,19 @@ export default async function DeckPage({ params }: DeckPageProps) {
                   </Link>
                 </Button>
                 
-                <Button variant="secondary" asChild className="flex items-center justify-center p-4">
-                  <Link href={`/decks/${deckId}/edit`}>
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit Deck
-                  </Link>
-                </Button>
+                <EditDeckDialog
+                  deckId={deckId}
+                  currentName={deckWithStats.name}
+                  currentDescription={deckWithStats.description || undefined}
+                  trigger={
+                    <Button variant="secondary" className="flex items-center justify-center p-4">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Deck
+                    </Button>
+                  }
+                />
                 
                 <Button variant="outline" asChild className="flex items-center justify-center p-4">
                   <Link href={`/decks/${deckId}/cards`}>

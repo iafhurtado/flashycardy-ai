@@ -80,9 +80,12 @@ export async function updateDeck(deckId: number, data: {
   description?: string;
   isPublic?: boolean;
 }) {
-  return await db.update(decksTable)
+  const result = await db.update(decksTable)
     .set(data)
-    .where(eq(decksTable.id, deckId));
+    .where(eq(decksTable.id, deckId))
+    .returning();
+  
+  return result[0];
 }
 
 export async function deleteDeck(deckId: number) {

@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { cardsTable } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { cardsTable, userProgressTable } from '@/db/schema';
+import { eq, desc, and, isNull } from 'drizzle-orm';
 
 export async function getCardsByDeckId(deckId: number) {
   return await db
@@ -34,4 +34,25 @@ export async function updateCard(cardId: number, data: {
 
 export async function deleteCard(cardId: number) {
   return await db.delete(cardsTable).where(eq(cardsTable.id, cardId));
+}
+
+export async function getCardsWithStudyStatus(deckId: number, userId: string) {
+  return await db
+    .select({
+      id: cardsTable.id,
+      front: cardsTable.front,
+      back: cardsTable.back,
+      createdAt: cardsTable.createdAt,
+      isStudied: userProgressTable.id,
+    })
+    .from(cardsTable)
+    .leftJoin(
+      userProgressTable,
+      and(
+        eq(cardsTable.id, userProgressTable.cardId),
+        eq(userProgressTable.userId, userId)
+      )
+    )
+    .where(eq(cardsTable.deckId, deckId))
+    .orderBy(desc(cardsTable.createdAt));
 }

@@ -34,6 +34,7 @@ interface CardData {
   front: string;
   back: string;
   createdAt: string;
+  isStudied: boolean;
 }
 
 export default function DeckPage({ params }: DeckPageProps) {
@@ -43,6 +44,7 @@ export default function DeckPage({ params }: DeckPageProps) {
   const [cards, setCards] = useState<CardData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showStudySession, setShowStudySession] = useState(false);
+  const [startCardIndex, setStartCardIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const resolvedParams = use(params);
@@ -94,6 +96,11 @@ export default function DeckPage({ params }: DeckPageProps) {
   const handleProgressUpdate = () => {
     // Refresh the page to update stats
     window.location.reload();
+  };
+
+  const handleStartStudyFromCard = (cardIndex: number) => {
+    setStartCardIndex(cardIndex);
+    setShowStudySession(true);
   };
 
   if (!isLoaded || isLoading) {
@@ -290,21 +297,61 @@ export default function DeckPage({ params }: DeckPageProps) {
             <CardHeader>
               <CardTitle>Cards Preview</CardTitle>
               <CardDescription>
-                Showing {Math.min(cards.length, 6)} of {cards.length} cards
+                {(() => {
+                  const unstudiedCards = cards.filter(card => !card.isStudied);
+                  const studiedCards = cards.filter(card => card.isStudied);
+                  
+                  if (unstudiedCards.length === 0) {
+                    return `All ${cards.length} cards have been studied!`;
+                  } else if (studiedCards.length === 0) {
+                    return `Showing ${Math.min(cards.length, 6)} of ${cards.length} cards to study`;
+                  } else {
+                    return `Showing ${Math.min(unstudiedCards.length, 6)} unstudied cards (${studiedCards.length} already studied)`;
+                  }
+                })()}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {cards.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {cards.slice(0, 6).map((card) => (
-                    <div key={card.id} className="flex justify-center">
-                      <Flashcard
-                        front={card.front}
-                        back={card.back}
-                        size="small"
-                      />
-                    </div>
-                  ))}
+                  {(() => {
+                    const unstudiedCards = cards.filter(card => !card.isStudied);
+                    const studiedCards = cards.filter(card => card.isStudied);
+                    
+                    // Show unstudied cards first, then fill with studied cards if needed
+                    const cardsToShow = [...unstudiedCards, ...studiedCards].slice(0, 6);
+                    
+                    return cardsToShow.map((card, index) => {
+                      const originalIndex = cards.findIndex(c => c.id === card.id);
+                      return (
+                        <div 
+                          key={card.id} 
+                          className="flex justify-center cursor-pointer transform transition-transform hover:scale-105"
+                          onClick={() => handleStartStudyFromCard(originalIndex)}
+                        >
+                          <div className={`relative ${!card.isStudied ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}>
+                            <div className={!card.isStudied ? 'opacity-100' : 'opacity-60'}>
+                              <Flashcard
+                                front={card.front}
+                                back={card.back}
+                                size="small"
+                              />
+                            </div>
+                            {!card.isStudied && (
+                              <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                Study
+                              </div>
+                            )}
+                            {card.isStudied && (
+                              <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                ✓
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -328,6 +375,7 @@ export default function DeckPage({ params }: DeckPageProps) {
             deckName={deckData.name}
             onClose={() => setShowStudySession(false)}
             onProgressUpdate={handleProgressUpdate}
+            startCardIndex={startCardIndex}
           />
         )}
       </SignedIn>

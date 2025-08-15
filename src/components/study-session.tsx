@@ -18,6 +18,7 @@ interface StudySessionProps {
   deckName: string;
   onClose: () => void;
   onProgressUpdate: () => void;
+  startCardIndex?: number;
 }
 
 export function StudySession({ 
@@ -25,9 +26,10 @@ export function StudySession({
   deckId, 
   deckName,
   onClose, 
-  onProgressUpdate 
+  onProgressUpdate,
+  startCardIndex = 0
 }: StudySessionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(startCardIndex);
   const [studiedCards, setStudiedCards] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import { getCardsByDeckId } from "@/db/queries";
+import { getCardsWithStudyStatus } from "@/db/queries";
 
 export async function GET(
   request: NextRequest,
@@ -20,9 +20,18 @@ export async function GET(
       return NextResponse.json({ error: "Invalid deck ID" }, { status: 400 });
     }
 
-    const cards = await getCardsByDeckId(deckId);
+    const cards = await getCardsWithStudyStatus(deckId, user.id);
     
-    return NextResponse.json(cards);
+    // Transform the data to include isStudied boolean
+    const transformedCards = cards.map(card => ({
+      id: card.id,
+      front: card.front,
+      back: card.back,
+      createdAt: card.createdAt,
+      isStudied: !!card.isStudied,
+    }));
+    
+    return NextResponse.json(transformedCards);
   } catch (error) {
     console.error("Error fetching cards:", error);
     return NextResponse.json(
